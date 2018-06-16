@@ -144,7 +144,15 @@ function createClusters(selection, g) {
     util.applyStyle(domCluster, node.style);
   });
 
-  util.applyTransition(svgClusters.exit(), g)
+  var exitSelection;
+
+  if (svgClusters.exit) {
+    exitSelection = svgClusters.exit();
+  } else {
+    exitSelection = svgClusters.selectAll(null); // empty selection
+  }
+
+  util.applyTransition(exitSelection, g)
     .style("opacity", 0)
     .remove();
 
@@ -184,7 +192,15 @@ function createEdgeLabels(selection, g) {
     if (!_.has(edge, "height")) { edge.height = bbox.height; }
   });
 
-  util.applyTransition(svgEdgeLabels.exit(), g)
+  var exitSelection;
+
+  if (svgEdgeLabels.exit) {
+    exitSelection = svgEdgeLabels.exit();
+  } else {
+    exitSelection = svgEdgeLabels.selectAll(null); // empty selection
+  }
+
+  util.applyTransition(exitSelection, g)
     .style("opacity", 0)
     .remove();
 
@@ -272,11 +288,11 @@ function calcPoints(g, e) {
 }
 
 function createLine(edge, points) {
-  var line = d3.line()
+  var line = (d3.line || d3.svg.line)()
     .x(function(d) { return d.x; })
     .y(function(d) { return d.y; });
   
-  line.curve(edge.curve);
+  (line.curve || line.interpolate)(edge.curve);
 
   return line(points);
 }
@@ -382,7 +398,15 @@ function createNodes(selection, g, shapes) {
     node.height = shapeBBox.height;
   });
 
-  util.applyTransition(svgNodes.exit(), g)
+  var exitSelection;
+
+  if (svgNodes.exit) {
+    exitSelection = svgNodes.exit();
+  } else {
+    exitSelection = svgNodes.selectAll(null); // empty selection
+  }
+
+  util.applyTransition(exitSelection, g)
     .style("opacity", 0)
     .remove();
 
@@ -1082,7 +1106,8 @@ module.exports = {
   rect: rect,
   ellipse: ellipse,
   circle: circle,
-  diamond: diamond
+  diamond: diamond,
+  doublecircle: doublecircle
 };
 
 function rect(parent, bbox, node) {
@@ -1112,6 +1137,27 @@ function ellipse(parent, bbox, node) {
 
   node.intersect = function(point) {
     return intersectEllipse(node, rx, ry, point);
+  };
+
+  return shapeSvg;
+}
+
+// for accepted state in DFAs
+function doublecircle(parent, bbox, node) {
+  var r = Math.max(bbox.width, bbox.height) / 2,
+      x = -bbox.width / 2,
+      y = -bbox.height / 2,
+      shapeSvg = parent.insert("g", ":first-child");
+
+  [r - 3, r].forEach(function (radius) {
+    shapeSvg.insert("circle", ":first-child")
+      .attr("x", x)
+      .attr("y", y)
+      .attr("r", radius);
+  });
+
+  node.intersect = function(point) {
+    return intersectCircle(node, r, point);
   };
 
   return shapeSvg;
@@ -1210,7 +1256,7 @@ function applyTransition(selection, g) {
 }
 
 },{"./lodash":21}],28:[function(require,module,exports){
-module.exports = "0.6.1";
+module.exports = "0.6.2-pre";
 
 },{}],29:[function(require,module,exports){
 
